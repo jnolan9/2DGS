@@ -1,0 +1,7 @@
+name: 2dgs_test
+channels:
+  - defaults
+dependencies:
+  - python=3.8
+  - cuda-toolkit
+prefix: /home/jnolan9/miniconda3/envs/2dgs_test
