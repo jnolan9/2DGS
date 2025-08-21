@@ -73,25 +73,6 @@ def colormap(img, cmap='jet'):
     return img
     
 
-# # CONVERT DEPTH TIFF TO COLORMAP PNG
-# tiff_name = "depth_00000"
-# depth_path = "/home/jnolan9/2DGS/2d-gaussian-splatting/output/a6556f4f-1/train/ours_30000/vis/"+tiff_name+".tiff"
-# output_path = "/home/jnolan9/2DGS/postProcessing/renders/vis_png/"+tiff_name+".png"
-# with open(depth_path, 'rb') as f:
-#     depth_in = np.array(Image.open(f), dtype=np.float32)
-# norm = depth_in.max()
-# depth = depth_in / norm
-
-# # colormap = matplotlib.colormaps['turbo']
-# # depth_colored = colormap(depth)
-# # depth_rgb = (depth_colored[:, :, :3] * 255).astype(np.uint8)
-# # Image.fromarray(depth_rgb).save("/home/jnolan9/2DGS/2d-gaussian-splatting/output/a6556f4f-1/train/ours_30000/vis_png/"+tiff_name+".png")
-# plt.imsave(output_path,depth)#,cmap='turbo')
-
-# depth1[100000,10000]
-
-
-
 ## GET 2D AND 3D POINTS FROM TXT FILES
 # images_path = '/home/jnolan9/DNSplatter/phomo_mod_cornelia/images_with_svec.txt'
 # points3d_path = '/home/jnolan9/DNSplatter/phomo_mod_cornelia/points3D.txt'
@@ -105,12 +86,6 @@ images = read_spcimages_text(images_path)
 cameras = read_cameras_text(cameras_path)
 
 
-
-# ## CREATE JSON FILE
-# recon_dir = ''
-# model_path = Path('./reconstruct_files')
-# write_model(cameras, images, points3d, model_path, ext=".bin")
-# colmap_to_json(model_path,model_path)
 
 ## READ JSON FILE FOR GIVEN FRAME
 img_ind = 6
@@ -158,8 +133,8 @@ R = build_rotation(r)
 x = vertex_data['x']
 y = vertex_data['y']
 z = vertex_data['z']
-xyz_2dgs = np.stack([x, y, z], axis=1)
-pcd_2dgs = xyz_2dgs
+xyz_W_2dgs = np.stack([x, y, z], axis=1)
+pcd_2dgs = xyz_W_2dgs
 nvecs_2dgs = R[:, :, 2].detach().cpu().numpy() # third row of rotation matrix (source: https://github.com/hbb1/2d-gaussian-splatting/issues/210?utm_source=chatgpt.com)
 
 ## PLOT NORMALS
@@ -192,29 +167,7 @@ x_C_gt = fx * xyz_C_gt[0] / xyz_C_gt[2] + cx
 y_C_gt = fy * xyz_C_gt[1] / xyz_C_gt[2] + cy
 xy_C_gt = np.vstack((x_C_gt[None, ...], y_C_gt[None, ...]))
 
-# print(pcd_gt.shape)
-# print(pcd_2dgs.shape)
-# print(pcd_2dgs[0,:].reshape((1,3)))
-print(np.min(np.linalg.norm(pcd_gt-pcd_2dgs[0,:].reshape((1,3)),axis=1)))
-# print('')
-# print(pcd_2dgs[0,:])
-# for i in range(pcd_gt.shape[0]):
-#     if np.abs(pcd_gt[i,0] - pcd_2dgs[0,0]):
-#         print(pcd_2dgs[0,:])
-#         print(pcd_gt[i,:])
-#         print('')
-
-# print(pcd_gt[0])
-# print(pcd_2dgs[0])
-# a = depth[2000,3400]
-
-print(R_CA)
-print('')
-print(R_CW.T)
-
-
-print(R_CW)
-
+xyz_W_gt = R_CW.T @ (xyz_C_gt - r_WC_C[..., None])
 
 
 # Get projected camera frame 2dgs coordinates
@@ -224,91 +177,93 @@ y_C_2dgs = fy * xyz_C_2dgs[1] / xyz_C_2dgs[2] + cy
 xy_C_2dgs = np.vstack((x_C_2dgs[None, ...], y_C_2dgs[None, ...]))
 
 
-# print(xyz_C_gt.shape)
-# print(xyz_C_2dgs.shape)
-# print(np.min(np.linalg.norm(xyz_C_gt-xyz_C_2dgs[:,0].reshape((3,1)),axis=0)))
-# print(np.linalg.norm(xyz_C_gt-xyz_C_2dgs[:,0].reshape((3,1)),axis=0))
+import pandas as pd
 
-# from mpl_toolkits.mplot3d import Axes3D
-# fig = plt.figure()
-# ax = fig.add_subplot(111, projection='3d')
-# ax.scatter(xyz_C_2dgs[0,:], xyz_C_2dgs[1,:], xyz_C_2dgs[2,:], c='b', label='2dgs', alpha=0.05)
-# ax.scatter(xyz_C_gt[0,:], xyz_C_gt[1,:], xyz_C_gt[2,:], c='r', label='gt', alpha=0.05)
-# ax.set_xlabel('X')
-# ax.set_ylabel('Y')
-# ax.set_zlabel('Z')
-# ax.legend()
-# ax.view_init(elev=30, azim=45)
-# plt.savefig('my.png')
-
-# print(xy_C_gt.shape)
-# print(xy_C_2dgs.shape)
-
-
-print(xyz_C_gt.shape[0])
-print(xyz_C_gt.shape[1])
-print('')
-theta = np.zeros((1,(xyz_C_gt.shape[1])))
-x = []
-y = []
+theta = np.zeros((1,(xyz_C_2dgs.shape[1])))
+x_gt = []
+y_gt = []
+z_gt = []
 theta = []
-print(theta)
-for i in range(0,xyz_C_gt.shape[1],2000):
 
-    if (i % 1000)==0:
+nvec_matched_gt = np.zeros_like(nvecs_2dgs)
+xyz_matched_gt = np.zeros_like(xyz_C_2dgs)
+for i in range(0,xyz_C_2dgs.shape[1],20000):
+# for i in range(xyz_C_2dgs.shape[1]):
+
+    if (i % 10000)==0:
         print(i)
-    j = np.argmin(np.linalg.norm(xyz_C_2dgs-xyz_C_gt[:,i].reshape((3,1)),axis=0))
 
-
-    a = R_CA @ nvecs_gt[i,:].reshape(3,1) #+ r_AC_C
-    b = R_CW @ nvecs_2dgs[j,:].reshape(3,1) #+ r_WC_C[..., None]
-    
-    a=a.reshape(3,1)/np.linalg.norm(a)
-    b=b.reshape(3,1)/np.linalg.norm(b)
+    # Correlation in 2dgs world frame
+    j = np.argmin(np.linalg.norm(xyz_W_gt-xyz_W_2dgs[i,:].reshape((3,1)),axis=0))
+    a = nvecs_2dgs[i,:].reshape(3,1)
+    b = R_CW.T @ ((R_CA @ nvecs_gt[j,:].reshape(3,1) ) )
     c=a.T@b
-    # print(c)
 
+    # Save gt position, normal, and difference for given 2dgs correlated
     theta.append(np.arccos((c[0,0])))
-    x.append(xy_C_2dgs[0,j])
-    y.append(xy_C_2dgs[1,j])
+    nvec_matched_gt[i,:] = b.T[0]
+    xyz_matched_gt[:,i] = xyz_W_gt[:,j]
 
-print(theta)
+    # Correlation in camera frame
+    # j = np.argmin(np.linalg.norm(xyz_C_gt-xyz_C_2dgs[:,i].reshape((3,1)),axis=0))
+    # a = R_CA @ nvecs_gt[j,:].reshape(3,1)
+    # b = R_CW @ nvecs_2dgs[i,:].reshape(3,1)
+    # c=a.T@b
+
 theta = np.array(theta)
 
-print(theta.shape)
-print(xy_C_2dgs.shape)
-
-# Save figure of gt normal map
-plt.close()
-plt.scatter(x,y, c=theta, cmap="jet",marker=",")
-# plt.axis("off")
-plt.gca().set_aspect("equal")
-plt.xlim(0,1024)
-plt.ylim(0,1024)
-# plt.xlim(0,800)
-# plt.ylim(0,800)
-plt.gca().invert_yaxis()
-plt.colorbar()
-plt.savefig('renders/diff/normalMap_'+str(img_ind)+'_diff.png')
+# Select subset of data for images
+# xyz_W_2dgs = xyz_W_2dgs[range(0,xyz_C_2dgs.shape[1],20000),:]
+# nvecs_2dgs = nvecs_2dgs[range(0,xyz_C_2dgs.shape[1],20000),:]
+# xyz_matched_gt = xyz_matched_gt[:,range(0,xyz_C_2dgs.shape[1],20000)]
+# nvec_matched_gt = nvec_matched_gt[range(0,xyz_C_2dgs.shape[1],20000),:]
 
 
-# Save figure of gt normal map
-plt.close()
-plt.scatter(xy_C_gt[0], xy_C_gt[1], s=0.15, c=vis_normal((R_CW.T @ R_CA @ nvecs_gt.T).T), marker=",")
-# plt.axis("off")
-plt.gca().invert_yaxis()
-plt.gca().set_aspect("equal")
-plt.savefig('renders/gt/normalMap_'+str(img_ind)+'_gt.png')
 
-a=(R_CW @ nvecs_2dgs.T).T
-# Save figure of gt normal map
-plt.close()
-plt.scatter(xy_C_2dgs[0], xy_C_2dgs[1], s=0.15, c=vis_normal(nvecs_2dgs), marker=",")
-# plt.axis("off")
-plt.gca().set_aspect("equal")
-plt.xlim(0,1024)
-plt.ylim(0,1024)
-# plt.xlim(0,800)
-# plt.ylim(0,800)
-plt.gca().invert_yaxis()
-plt.savefig('renders/2dgs/normalMap_'+str(img_ind)+'_2dgs.png')
+# df = pd.DataFrame({
+#     'pos_x_W_2dgs': xyz_W_2dgs[:,0],
+#     'pos_y_W_2dgs': xyz_W_2dgs[:,1],
+#     'pos_z_W_2dgs': xyz_W_2dgs[:,2],
+#     'nvec_x_W_2dgs': nvecs_2dgs[:,0],
+#     'nvec_y_W_2dgs': nvecs_2dgs[:,1],
+#     'nvec_z_W_2dgs': nvecs_2dgs[:,2],
+#     'pos_x_W_gt': xyz_matched_gt[0,:],
+#     'pos_y_W_gt': xyz_matched_gt[1,:],
+#     'pos_z_W_gt': xyz_matched_gt[2,:],
+#     'nvec_x_W_gt': nvec_matched_gt[:,0],
+#     'nvec_y_W_gt': nvec_matched_gt[:,1],
+#     'nvec_z_W_gt': nvec_matched_gt[:,2],
+#     'theta_gt_2dgs': theta
+# })
+# df.to_csv('correlated_normals.csv', index=False)
+
+df = pd.DataFrame({
+    'pos_x_W_2dgs': xyz_W_2dgs[:,0],
+    'pos_y_W_2dgs': xyz_W_2dgs[:,1],
+    'pos_z_W_2dgs': xyz_W_2dgs[:,2],
+    'nvec_x_W_2dgs': nvecs_2dgs[:,0],
+    'nvec_y_W_2dgs': nvecs_2dgs[:,1],
+    'nvec_z_W_2dgs': nvecs_2dgs[:,2],
+    'pos_x_W_gt': xyz_matched_gt[0,:],
+    'pos_y_W_gt': xyz_matched_gt[1,:],
+    'pos_z_W_gt': xyz_matched_gt[2,:],
+    'nvec_x_W_gt': nvec_matched_gt[:,0],
+    'nvec_y_W_gt': nvec_matched_gt[:,1],
+    'nvec_z_W_gt': nvec_matched_gt[:,2],
+    'theta_gt_2dgs': theta
+})
+df.to_csv('truncated_correlated_normals.csv', index=False)
+
+
+# # Save figure of gt normal map
+# plt.close()
+# plt.scatter(x,y, c=theta, cmap="jet",marker=",")
+# # plt.axis("off")
+# plt.gca().set_aspect("equal")
+# plt.xlim(0,1024)
+# plt.ylim(0,1024)
+# # plt.xlim(0,800)
+# # plt.ylim(0,800)
+# plt.gca().invert_yaxis()
+# plt.colorbar()
+# plt.savefig('renders/diff/normalMap_'+str(img_ind)+'_diff.png')
