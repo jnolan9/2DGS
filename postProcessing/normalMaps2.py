@@ -93,7 +93,7 @@ cameras = read_cameras_text(cameras_path)
 # colmap_to_json(model_path,model_path)
 
 ## READ JSON FILE FOR GIVEN FRAME
-img_ind = 8
+img_ind = 6
 json_path = '/home/jnolan9/2DGS/nerfData/transforms_train.json'
 # json_path = '/home/jnolan9/2DGS/nerf/data/nerf_synthetic/lego/transforms_train.json'
 with open(json_path) as json_file:
@@ -203,6 +203,8 @@ plt.gca().set_aspect("equal")
 plt.gca().invert_yaxis()
 plt.savefig('renders/2dgs/normalMap_'+str(img_ind)+'_2dgsAvg.png')
 
+plt.close()
+
 px_nvecs_gt = nvecs_W_gt[px_dist<1,:].T
 df_nvec_gt = pd.DataFrame({'x': np.floor(px_gt[0]), 'y': np.floor(px_gt[1]), 
                              'nx': px_nvecs_gt[0], 'ny': px_nvecs_gt[1], 'nz': px_nvecs_gt[2]})
@@ -230,6 +232,7 @@ plt.gca().set_aspect("equal")
 plt.gca().invert_yaxis()
 plt.colorbar()
 plt.savefig('renders/diff/scatter/normalMap_'+str(img_ind)+'_scatterdiff.png')
+plt.close()
 
 # Create an image averaging the theta differences in each pixel
 df_avg = pd.DataFrame({'x': np.floor(px_2dgs[0]), 'y': np.floor(px_2dgs[1]), 't': theta_filtered})
@@ -241,7 +244,7 @@ pivot=np.nan_to_num(pivot, nan=0)
 pivot = np.array(pivot)
 # pivot = pivot/np.max(pivot)
 fig, ax = plt.subplots()
-im = plt.imshow(pivot.T,cmap="jet")
+im = plt.imshow(pivot.T,cmap="jet",vmax=0.5)
 # plt.xlim(0,1024)
 # plt.ylim(0,1024)
 plt.colorbar()
@@ -254,5 +257,7 @@ plt.savefig('renders/diff/avg/normalMap_'+str(img_ind)+'_avgdiff.png')
 # plt.colorbar()
 # plt.savefig('renders/diff/avg/normalMap_'+str(img_ind)+'_avgdiff.png')
 
-
+plt.close()
+plt.hist(theta_filtered,bins=50)
+plt.savefig('hist.png')
 # python;  exec(open('normalMaps2.py').read())
