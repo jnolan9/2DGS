@@ -18,7 +18,7 @@ CameraModel = collections.namedtuple(
 Camera = collections.namedtuple(
     "Camera", ["id", "model", "width", "height", "params"])
 BaseImage = collections.namedtuple(
-    "Image", ["id", "qvec", "tvec", "camera_id", "name", "xys", "point3D_ids"])
+    "Image", ["id", "qvec", "tvec", "svec", "camera_id", "name", "xys", "point3D_ids"])
 Point3D = collections.namedtuple(
     "Point3D", ["id", "xyz", "rgb", "error", "image_ids", "point2D_idxs"])
 CAMERA_MODELS = {
@@ -257,14 +257,15 @@ def read_extrinsics_text(path):
                 image_id = int(elems[0])
                 qvec = np.array(tuple(map(float, elems[1:5])))
                 tvec = np.array(tuple(map(float, elems[5:8])))
-                camera_id = int(elems[8])
-                image_name = elems[9]
+                svec = np.array(tuple(map(float, elems[8:11]))) # added Sun vector
+                camera_id = int(elems[11])
+                image_name = elems[12]
                 elems = fid.readline().split()
-                xys = np.column_stack([tuple(map(float, elems[0::3])),
-                                       tuple(map(float, elems[1::3]))])
-                point3D_ids = np.array(tuple(map(int, elems[2::3])))
+                xys = np.column_stack([tuple(map(float, elems[0::4])),
+                                       tuple(map(float, elems[1::4]))])
+                point3D_ids = np.array(tuple(map(int, elems[3::4])))
                 images[image_id] = Image(
-                    id=image_id, qvec=qvec, tvec=tvec,
+                    id=image_id, qvec=qvec, tvec=tvec, svec=svec,
                     camera_id=camera_id, name=image_name,
                     xys=xys, point3D_ids=point3D_ids)
     return images
