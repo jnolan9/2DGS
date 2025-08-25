@@ -90,10 +90,10 @@ class GaussianExtractor(object):
     @torch.no_grad()
     def clean(self):
         self.depthmaps = []
-        # self.alphamaps = []
+        self.alphamaps = []
         self.rgbmaps = []
-        # self.normals = []
-        # self.depth_normals = []
+        self.normals = []
+        self.depth_normals = []
         self.viewpoint_stack = []
 
     @torch.no_grad()
@@ -104,36 +104,6 @@ class GaussianExtractor(object):
         self.clean()
         self.viewpoint_stack = viewpoint_stack
         for i, viewpoint_cam in tqdm(enumerate(self.viewpoint_stack), desc="reconstruct radiance fields"):
-            # print(i)
-            # print(viewpoint_cam.R)
-            if i == 8:
-
-                # print(viewpoint_cam.T)
-                # print(viewpoint_cam.R)
-                a = viewpoint_cam.world_view_transform
-                b = viewpoint_cam.full_proj_transform
-
-                a = a.detach().cpu().numpy()
-                b = b.detach().cpu().numpy()
-
-                a_R = a[:3, :3]
-                a_T = a[3, :3]
-
-                # print(a_R-viewpoint_cam.R)
-                # print(a_T-viewpoint_cam.T)
-
-                # print(a)
-                # print(b)
-
-                # W, H = viewpoint_cam.image_width, viewpoint_cam.image_height
-                # near, far = viewpoint_cam.znear, viewpoint_cam.zfar
-                # ndc2pix = torch.tensor([
-                #              [W / 2, 0, 0, (W-1) / 2],
-                #              [0, H / 2, 0, (H-1) / 2],
-                #              [0, 0, far-near, near],
-                #             [0, 0, 0, 1]]).float().cuda().T
-                # world2pix =  viewpoint_cam.full_proj_transform @ ndc2pix
-                # print(world2pix)
 
             render_pkg = self.render(viewpoint_cam, self.gaussians)
             rgb = render_pkg['render']
@@ -143,9 +113,9 @@ class GaussianExtractor(object):
             depth_normal = render_pkg['surf_normal']
             self.rgbmaps.append(rgb.cpu())
             self.depthmaps.append(depth.cpu())
-            # self.alphamaps.append(alpha.cpu())
-            # self.normals.append(normal.cpu())
-            # self.depth_normals.append(depth_normal.cpu())
+            self.alphamaps.append(alpha.cpu())
+            self.normals.append(normal.cpu())
+            self.depth_normals.append(depth_normal.cpu())
         
         # self.rgbmaps = torch.stack(self.rgbmaps, dim=0)
         # self.depthmaps = torch.stack(self.depthmaps, dim=0)
@@ -322,5 +292,5 @@ class GaussianExtractor(object):
             save_img_u8(gt.permute(1,2,0).cpu().numpy(), os.path.join(gts_path, '{0:05d}'.format(idx) + ".png"))
             save_img_u8(self.rgbmaps[idx].permute(1,2,0).cpu().numpy(), os.path.join(render_path, '{0:05d}'.format(idx) + ".png"))
             save_img_f32(self.depthmaps[idx][0].cpu().numpy(), os.path.join(vis_path, 'depth_{0:05d}'.format(idx) + ".tiff"))
-            # save_img_u8(self.normals[idx].permute(1,2,0).cpu().numpy() * 0.5 + 0.5, os.path.join(vis_path, 'normal_{0:05d}'.format(idx) + ".png"))
-            # save_img_u8(self.depth_normals[idx].permute(1,2,0).cpu().numpy() * 0.5 + 0.5, os.path.join(vis_path, 'depth_normal_{0:05d}'.format(idx) + ".png"))
+            save_img_u8(self.normals[idx].permute(1,2,0).cpu().numpy() * 0.5 + 0.5, os.path.join(vis_path, 'normal_{0:05d}'.format(idx) + ".png"))
+            save_img_u8(self.depth_normals[idx].permute(1,2,0).cpu().numpy() * 0.5 + 0.5, os.path.join(vis_path, 'depth_normal_{0:05d}'.format(idx) + ".png"))

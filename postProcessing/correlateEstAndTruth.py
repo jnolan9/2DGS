@@ -98,6 +98,35 @@ with open(json_path) as json_file:
     img_name = frame['file_path']
     print(img_name)
 
+    # A TEST
+    c2w = np.array(frame["transform_matrix"])
+    R_WC_opengl = c2w[:3,:3]
+    R_CW_opengl = R_WC_opengl.T
+
+    c2w_colmap = c2w.copy()
+    c2w_colmap[:3, 1:3] *= -1
+    R_WC_colmap = c2w_colmap[:3,:3]
+
+    w2c_colmap = np.linalg.inv(c2w_colmap)
+    R_CW_colmap = w2c_colmap[:3,:3]    
+
+    R_CW_mine = R_CW_colmap.copy()
+    R_CW_mine[:,[0,1,2]]=R_CW_mine[:,[0,2,1]]
+    R_CW_mine[:,1] *= -1
+
+    R_CA = images[img_ind].qvec2rotmat()
+
+    print(np.stack((R_CW_opengl[:,0],R_CW_colmap[:,0],R_CW_mine[:,0],R_CA[:,0]),axis=0))
+    print(np.stack((R_CW_opengl[:,1],R_CW_colmap[:,1],R_CW_mine[:,1],R_CA[:,1]),axis=0))
+    print(np.stack((R_CW_opengl[:,2],R_CW_colmap[:,2],R_CW_mine[:,2],R_CA[:,2]),axis=0))
+
+    a[:,1]
+    exec(open('correlateEstAndTruth.py').read())
+
+
+
+
+
     # NeRF 'transform_matrix' is a camera-to-world transform (from 2dgs dataset_readers.py)
     c2w = np.array(frame["transform_matrix"])
     c2w[:3, 1:3] *= -1 # change from OpenGL/Blender camera axes (Y up, Z back) to COLMAP (Y down, Z forward)

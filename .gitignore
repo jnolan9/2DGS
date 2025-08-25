@@ -1,0 +1,12 @@
+postProcessing/phomo_init_cornelia/
+postProcessing/reconstruct_files/
+postProcessing/renders/
+postProcessing/utils/__pycache__
+editedPhomo/
+nerfData/
+nerfData2/
+2d-gaussian-splatting/torch-env/
+data/
+nerf/
+2d-gaussian-splatting/pip_requirements.txt
+correlated_normals.csv
