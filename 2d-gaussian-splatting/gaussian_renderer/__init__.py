@@ -11,7 +11,9 @@
 
 import torch
 import math
-from diff_surfel_rasterization import GaussianRasterizationSettings, GaussianRasterizer
+from submodules.diff_surfel_rasterization.diff_surfel_rasterization import _C
+from submodules.diff_surfel_rasterization.diff_surfel_rasterization import GaussianRasterizationSettings, GaussianRasterizer
+
 from scene.gaussian_model import GaussianModel
 from utils.sh_utils import eval_sh
 from utils.point_utils import depth_to_normal
@@ -34,6 +36,14 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     tanfovx = math.tan(viewpoint_camera.FoVx * 0.5)
     tanfovy = math.tan(viewpoint_camera.FoVy * 0.5)
 
+    # import numpy as np
+
+    # print("A")
+    # print(viewpoint_camera.svec)
+    # print(viewpoint_camera.camera_center)
+    # print(np.shape(viewpoint_camera.svec))
+    # print(np.shape(viewpoint_camera.camera_center))
+
     raster_settings = GaussianRasterizationSettings(
         image_height=int(viewpoint_camera.image_height),
         image_width=int(viewpoint_camera.image_width),
@@ -41,6 +51,7 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
         tanfovy=tanfovy,
         bg=bg_color,
         scale_modifier=scaling_modifier,
+        svec=viewpoint_camera.svec,
         viewmatrix=viewpoint_camera.world_view_transform,
         projmatrix=viewpoint_camera.full_proj_transform,
         sh_degree=pc.active_sh_degree,
